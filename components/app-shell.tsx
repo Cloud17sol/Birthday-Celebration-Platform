@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import logo from "@/app/birthday-logo.png";
 import { logout } from "@/app/dashboard/actions";
 import { cn } from "cn";
 
@@ -103,8 +104,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             open && "translate-x-0"
           )}
         >
-          <div className="flex items-center justify-between px-2 pb-4">
-            <p className="text-lg font-semibold tracking-tight">Celebrations</p>
+          <div className="flex items-center justify-between gap-2 px-2 pb-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <img
+                src={logo.src}
+                alt=""
+                className="size-8 shrink-0 rounded-[0.55rem]"
+              />
+              <p className="min-w-0 truncate text-lg font-semibold tracking-tight">
+                Celebrations
+              </p>
+            </div>
             <button
               ref={closeButtonRef}
               type="button"
