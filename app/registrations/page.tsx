@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ClipboardCheck, LayoutDashboard } from "lucide-react";
 import { cn } from "cn";
+import { ApproveAllRegistrations } from "@/components/approve-all-registrations";
 import { ListPagination } from "@/components/list-pagination";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -56,7 +58,7 @@ export default async function RegistrationsPage({
   if (membershipError || !currentMembership || !organization) {
     if (membershipError) {
       return (
-        <main className="mx-auto w-full max-w-3xl overflow-x-hidden p-4 sm:p-8">
+        <main className="w-full overflow-x-hidden p-4 sm:p-6 lg:p-8">
           <h1 className="text-2xl font-semibold">Registrations</h1>
           <p className="mt-6 text-sm text-destructive">
             Unable to load your organization. Please try again.
@@ -119,19 +121,39 @@ export default async function RegistrationsPage({
     );
 
   return (
-    <main className="mx-auto w-full max-w-3xl overflow-x-hidden p-4 sm:p-8">
+    <main className="w-full overflow-x-hidden p-4 sm:p-6 lg:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">Registrations</h1>
           <p className="mt-2 break-words text-muted-foreground">{organization.name}</p>
         </div>
-        <Link
-          href="/dashboard"
-          className={cn(buttonVariants({ variant: "outline" }), "h-11")}
-        >
-          Dashboard
-        </Link>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {pending.length > 0 ? <ApproveAllRegistrations /> : null}
+          <Link
+            href="/dashboard"
+            aria-label="Dashboard"
+            title="Dashboard"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "icon" }),
+              "size-9 shrink-0"
+            )}
+          >
+            <LayoutDashboard />
+          </Link>
+        </div>
       </div>
+
+      {notice === "approved-all" ? (
+        <p className="mt-4 text-sm" role="status">
+          All pending registrations were approved.
+        </p>
+      ) : null}
+
+      {notice === "approve-failed" ? (
+        <p className="mt-4 text-sm text-destructive" role="alert">
+          Some registrations could not be approved. Review the ones still pending.
+        </p>
+      ) : null}
 
       {queueNotice ? (
         <p className="mt-6 text-sm text-destructive" role="alert">
@@ -161,7 +183,8 @@ export default async function RegistrationsPage({
           </CardContent>
         </Card>
       ) : (
-        <div className="mt-6 space-y-3">
+        <>
+        <ul className="mt-4 space-y-2 md:hidden">
           {pending.map((submission) => {
             const birthday = formatSubmissionBirthday(
               submission.birth_month,
@@ -169,41 +192,109 @@ export default async function RegistrationsPage({
               submission.birth_year
             );
             const submittedAt = formatSubmittedAt(submission.created_at);
+            const contact = [submission.email, submission.phone]
+              .filter(Boolean)
+              .join(" · ");
 
             return (
-              <Card key={submission.id}>
-                <CardHeader>
-                  <CardTitle className="break-words text-base">
+              <li
+                key={submission.id}
+                data-slot="card"
+                className="px-3 py-3 text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 font-medium break-words">
                     {submission.display_name}
-                  </CardTitle>
-                  <CardDescription>
-                    {birthday ?? "Birthday unavailable"} ·{" "}
+                  </p>
+                  <p className="shrink-0 text-muted-foreground">
                     {submissionStatusLabel(submission.status)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {submission.email ? (
-                    <p className="break-all text-sm">{submission.email}</p>
-                  ) : null}
-                  {submission.phone ? (
-                    <p className="break-all text-sm">{submission.phone}</p>
-                  ) : null}
-                  {submittedAt ? (
-                    <p className="text-sm text-muted-foreground">
-                      Submitted {submittedAt}
-                    </p>
-                  ) : null}
+                  </p>
                   <Link
                     href={`/registrations/${submission.id}`}
-                    className={cn(buttonVariants({ variant: "outline" }), "h-11")}
+                    aria-label="Review"
+                    title="Review"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "icon" }),
+                      "size-8 shrink-0"
+                    )}
                   >
-                    Review
+                    <ClipboardCheck />
                   </Link>
-                </CardContent>
-              </Card>
+                </div>
+                <p className="mt-1 text-muted-foreground">
+                  {birthday ?? "Birthday unavailable"}
+                  {contact ? ` · ${contact}` : ""}
+                </p>
+                {submittedAt ? (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Submitted {submittedAt}
+                  </p>
+                ) : null}
+              </li>
             );
           })}
-        </div>
+        </ul>
+        <ul className="@container mt-4 hidden flex-col gap-2 md:flex">
+          {pending.map((submission) => {
+            const birthday = formatSubmissionBirthday(
+              submission.birth_month,
+              submission.birth_day,
+              submission.birth_year
+            );
+            const submittedAt = formatSubmittedAt(submission.created_at);
+            const contact = [submission.email, submission.phone]
+              .filter(Boolean)
+              .join(" · ");
+            const details = [
+              birthday ?? "Birthday unavailable",
+              contact,
+              submittedAt ? `Submitted ${submittedAt}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+
+            return (
+              <li
+                key={submission.id}
+                data-slot="card"
+                className="min-w-0 overflow-hidden px-3 py-2 text-sm @min-[56rem]:flex @min-[56rem]:items-center @min-[56rem]:gap-3 @min-[56rem]:px-4 @min-[56rem]:py-2.5"
+              >
+                <div className="flex min-w-0 items-center gap-2 @min-[56rem]:contents">
+                  <p className="min-w-0 flex-1 truncate font-medium @min-[56rem]:w-36 @min-[56rem]:flex-none">
+                    {submission.display_name}
+                  </p>
+                  <p className="hidden w-28 truncate @min-[56rem]:block">
+                    {birthday ?? "Birthday unavailable"}
+                  </p>
+                  <p className="shrink-0 text-muted-foreground @min-[56rem]:w-20">
+                    {submissionStatusLabel(submission.status)}
+                  </p>
+                  <p className="hidden min-w-0 flex-1 truncate @min-[56rem]:block">
+                    {contact || "No contact"}
+                  </p>
+                  <p className="hidden min-w-0 max-w-56 truncate text-muted-foreground @min-[56rem]:block">
+                    {submittedAt ? `Submitted ${submittedAt}` : ""}
+                  </p>
+                  <Link
+                    href={`/registrations/${submission.id}`}
+                    aria-label="Review"
+                    title="Review"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "icon" }),
+                      "size-8 shrink-0"
+                    )}
+                  >
+                    <ClipboardCheck />
+                  </Link>
+                </div>
+                <p className="mt-0.5 truncate text-muted-foreground @min-[56rem]:hidden">
+                  {details}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+        </>
       )}
       {submissionsError || !submissions ? null : (
         <ListPagination

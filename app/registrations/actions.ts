@@ -177,3 +177,80 @@ export async function reviewRegistration(formData: FormData) {
 
   redirect(reviewRedirect(submissionId, reviewResult));
 }
+
+export async function approveAllRegistrations() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from("organization_members")
+    .select("id, organization_id, role, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  const currentMembership = memberships?.[0];
+
+  if (membershipError || !currentMembership) {
+    redirect("/dashboard");
+  }
+
+  if (!isRegistrationManager(currentMembership.role)) {
+    redirect("/dashboard");
+  }
+
+  const { data: pendingRows, error: pendingError } = await supabase
+    .from("member_submissions")
+    .select("id")
+    .eq("organization_id", currentMembership.organization_id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (pendingError || !pendingRows) {
+    redirect("/registrations?notice=failed");
+  }
+
+  let failed = false;
+
+  for (const row of pendingRows) {
+    let reviewResult: ReturnType<typeof parseReviewResult> = null;
+
+    try {
+      const { data, error } = await supabase.rpc("review_member_submission", {
+        submission_id: row.id,
+        decision: "approve",
+      });
+
+      if (!error) {
+        reviewResult = parseReviewResult(data);
+      }
+    } catch {
+      reviewResult = null;
+    }
+
+    if (reviewResult?.success && reviewResult.code === "approved" && reviewResult.memberId) {
+      await copyRegistrationPhoto(
+        supabase,
+        currentMembership.organization_id,
+        row.id,
+        reviewResult.memberId
+      );
+      continue;
+    }
+
+    if (reviewResult?.code === "already_reviewed") {
+      continue;
+    }
+
+    failed = true;
+  }
+
+  redirect(failed ? "/registrations?notice=approve-failed" : "/registrations?notice=approved-all");
+}
