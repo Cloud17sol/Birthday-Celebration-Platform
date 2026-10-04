@@ -344,6 +344,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          logo_path: string | null
           name: string
           slug: string
           updated_at: string
@@ -352,6 +353,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          logo_path?: string | null
           name: string
           slug: string
           updated_at?: string
@@ -360,6 +362,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          logo_path?: string | null
           name?: string
           slug?: string
           updated_at?: string
@@ -439,6 +442,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          logo_path: string | null
           name: string
           slug: string
           updated_at: string
@@ -460,9 +464,21 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_public_organization_logo: {
+        Args: { registration_token: string }
+        Returns: string
+      }
       get_public_registration: {
         Args: { registration_token: string }
         Returns: string
+      }
+      organization_logo_delete_allowed: {
+        Args: { object_name: string }
+        Returns: boolean
+      }
+      organization_logo_insert_allowed: {
+        Args: { object_name: string }
+        Returns: boolean
       }
       has_organization_role: {
         Args: { allowed_roles: string[]; org_id: string }

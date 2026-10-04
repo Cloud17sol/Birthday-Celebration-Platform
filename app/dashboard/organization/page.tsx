@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cn } from "cn";
-import { updateOrganization } from "@/app/dashboard/actions";
+import {
+  removeOrganizationLogo,
+  updateOrganization,
+  uploadOrganizationLogo,
+} from "@/app/dashboard/actions";
+import {
+  ORGANIZATION_LOGO_BUCKET,
+  isOrganizationLogoPath,
+} from "@/lib/organization-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +41,7 @@ export default async function EditOrganizationPage({
 
   const { data: memberships, error: membershipError } = await supabase
     .from("organization_members")
-    .select("organization_id, role, created_at, organizations(name, slug)")
+    .select("organization_id, role, created_at, organizations(name, slug, logo_path)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
@@ -69,6 +77,12 @@ export default async function EditOrganizationPage({
   ) {
     redirect("/dashboard");
   }
+
+  const logoUrl = isOrganizationLogoPath(organization.logo_path)
+    ? supabase.storage
+        .from(ORGANIZATION_LOGO_BUCKET)
+        .getPublicUrl(organization.logo_path).data.publicUrl
+    : null;
 
   return (
     <main className="mx-auto w-full max-w-md p-4 sm:p-6">
@@ -121,6 +135,40 @@ export default async function EditOrganizationPage({
           </Link>
         </div>
       </form>
+
+      <form action={uploadOrganizationLogo} className="mt-8 space-y-4 border-t border-[#e6ebf2] pt-6">
+        <div className="space-y-2">
+          <Label htmlFor="organization_logo">Registration logo</Label>
+          <p className="text-sm text-muted-foreground">
+            Shown centered at the top of the public registration form. Optional.
+          </p>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt=""
+              className="mx-auto max-h-28 w-full max-w-sm object-contain"
+            />
+          ) : null}
+          <Input
+            id="organization_logo"
+            name="logo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="h-11"
+          />
+        </div>
+        <Button type="submit" className="h-11">
+          Save logo
+        </Button>
+      </form>
+
+      {logoUrl ? (
+        <form action={removeOrganizationLogo} className="mt-3">
+          <Button type="submit" variant="outline" className="h-11">
+            Remove logo
+          </Button>
+        </form>
+      ) : null}
     </main>
   );
 }

@@ -10,6 +10,10 @@ import {
   isPublicRegistrationToken,
   publicJoinView,
 } from "@/lib/public-registration";
+import {
+  ORGANIZATION_LOGO_BUCKET,
+  isOrganizationLogoPath,
+} from "@/lib/organization-logo";
 import { createClient } from "@/lib/supabase/server";
 import { submitPublicRegistration } from "./actions";
 
@@ -40,6 +44,38 @@ async function publicOrganizationName(token: string) {
   const name = data.trim();
 
   return name.length > 0 ? name : null;
+}
+
+async function publicOrganizationLogoUrl(token: string) {
+  if (!isPublicRegistrationToken(token)) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_organization_logo", {
+    registration_token: token,
+  });
+
+  if (error || !isOrganizationLogoPath(data)) {
+    return null;
+  }
+
+  return supabase.storage.from(ORGANIZATION_LOGO_BUCKET).getPublicUrl(data).data
+    .publicUrl;
+}
+
+function RegistrationLogo({ src }: { src: string | null }) {
+  if (!src) {
+    return null;
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      className="mx-auto mb-4 max-h-32 w-full max-w-sm object-contain"
+    />
+  );
 }
 
 function JoinFrame({ children }: { children: React.ReactNode }) {
@@ -79,14 +115,17 @@ function UnavailableRegistration() {
 function RegistrationReceived({
   organizationName,
   photoFailed,
+  logoUrl,
 }: {
   organizationName: string;
   photoFailed: boolean;
+  logoUrl: string | null;
 }) {
   return (
     <JoinFrame>
       <Card className="mx-auto w-full max-w-lg">
         <CardHeader>
+          <RegistrationLogo src={logoUrl} />
           <CardTitle className="text-xl">Thank you!</CardTitle>
           <CardDescription className="break-words text-base text-foreground">
             Your birthday details have been submitted to {organizationName}.
@@ -113,6 +152,7 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
   const { token } = await params;
   const { submitted, photo } = await searchParams;
   const organizationName = await publicOrganizationName(token);
+  const logoUrl = await publicOrganizationLogoUrl(token);
   const view = publicJoinView({
     organizationName,
     submitted: submitted === "1",
@@ -127,6 +167,7 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
       <RegistrationReceived
         organizationName={view.organizationName}
         photoFailed={photo === "failed"}
+        logoUrl={logoUrl}
       />
     );
   }
@@ -137,6 +178,7 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
     <JoinFrame>
       <Card size="sm" className="mx-auto w-full max-w-lg">
         <CardHeader>
+          <RegistrationLogo src={logoUrl} />
           <CardTitle className="text-xl">Birthday Registration</CardTitle>
           <CardDescription className="break-words text-base font-medium text-foreground">
             {view.organizationName}
