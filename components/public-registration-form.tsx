@@ -111,21 +111,6 @@ export function PublicRegistrationForm({
         </div>
       </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="birth_year">Birth year</Label>
-        <Input
-          id="birth_year"
-          name="birth_year"
-          className={fieldClassName}
-          type="number"
-          inputMode="numeric"
-          min={1900}
-          step={1}
-          defaultValue={state.values.birthYear}
-        />
-        <p className="text-xs text-muted-foreground">Optional.</p>
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label htmlFor="email">Email</Label>
