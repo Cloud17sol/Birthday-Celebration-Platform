@@ -197,3 +197,20 @@ export function memberDeactivatePath(
 
   return `/members/${memberId}/deactivate${search}`;
 }
+
+export function memberDeletePath(
+  memberId: string,
+  state: {
+    q?: string | null;
+    status?: MemberDirectoryStatus;
+    month?: MemberDirectoryMonth;
+    page?: number;
+  }
+) {
+  const directoryPath = memberDirectoryPath(state);
+  const search = directoryPath.startsWith("/members?")
+    ? directoryPath.slice("/members".length)
+    : "";
+
+  return `/members/${memberId}/delete${search}`;
+}

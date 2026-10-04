@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LayoutDashboard, Pencil, UserMinus, UserPlus } from "lucide-react";
+import { LayoutDashboard, Pencil, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { cn } from "cn";
 import { ListPagination } from "@/components/list-pagination";
 import { MemberAvatar } from "@/components/member-avatar";
@@ -10,6 +10,7 @@ import { setMemberActiveState } from "@/app/members/actions";
 import {
   birthMonthForFilter,
   memberDeactivatePath,
+  memberDeletePath,
   memberDirectoryEmptyMessage,
   memberDirectoryPath,
   memberDirectorySearchFilter,
@@ -103,10 +104,12 @@ function MemberActions({
   memberId,
   isActive,
   directory,
+  compact = false,
 }: {
   memberId: string;
   isActive: boolean;
   directory: ParsedMemberDirectoryQuery;
+  compact?: boolean;
 }) {
   const directoryState = {
     q: directory.searchTerm ?? "",
@@ -117,11 +120,11 @@ function MemberActions({
 
   const actionClass = cn(
     buttonVariants({ variant: "outline", size: "icon" }),
-    "size-11"
+    compact ? "size-8" : "size-11"
   );
 
   return (
-    <div className="flex flex-wrap justify-end gap-2">
+    <div className={cn("flex shrink-0 justify-end", compact ? "gap-1" : "gap-2")}>
       <Link
         href={`/members/${memberId}/edit`}
         aria-label="Edit member"
@@ -154,12 +157,25 @@ function MemberActions({
             size="icon"
             aria-label="Reactivate member"
             title="Reactivate"
-            className="size-11"
+            className={compact ? "size-8" : "size-11"}
           >
             <UserPlus />
           </Button>
         </form>
       )}
+      <Link
+        href={memberDeletePath(memberId, {
+          q: directory.searchTerm,
+          status: directory.status,
+          month: directory.month,
+          page: directory.page,
+        })}
+        aria-label="Delete member"
+        title="Delete"
+        className={actionClass}
+      >
+        <Trash2 />
+      </Link>
     </div>
   );
 }
@@ -572,57 +588,61 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
           </div>
 
           <div className="mt-4 space-y-2 md:hidden">
-            {members.map((member) => (
-              <Card
-                key={member.id}
-                className="[--card-spacing:--spacing(3)]"
-                style={{
-                  backgroundColor: memberCardColor(
-                    member.birth_month,
-                    member.birth_day,
-                    birthdayColorYear
-                  ),
-                }}
-              >
-                <div className="flex items-start gap-3 px-(--card-spacing)">
-                  <MemberAvatar
-                    initials={memberInitials(
-                      member.first_name,
-                      member.last_name,
-                      member.display_name
-                    )}
-                    imageUrl={photoUrls.get(member.id) ?? null}
-                  />
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="font-medium leading-tight">{member.display_name}</p>
-                    <p className="text-muted-foreground">
-                      {formatBirthday(
-                        member.birth_month,
-                        member.birth_day,
-                        member.birth_year
+            {members.map((member) => {
+              const contact = [member.email, member.phone].filter(Boolean).join(" · ");
+
+              return (
+                <Card
+                  key={member.id}
+                  size="sm"
+                  style={{
+                    backgroundColor: memberCardColor(
+                      member.birth_month,
+                      member.birth_day,
+                      birthdayColorYear
+                    ),
+                  }}
+                >
+                  <div className="flex items-center gap-2 px-(--card-spacing)">
+                    <MemberAvatar
+                      initials={memberInitials(
+                        member.first_name,
+                        member.last_name,
+                        member.display_name
                       )}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <ContactDetails
-                        email={member.email}
-                        phone={member.phone}
-                      />
-                      <span className="text-muted-foreground" aria-hidden="true">
-                        ·
-                      </span>
-                      <MemberStatus isActive={member.is_active} />
-                    </div>
-                  </div>
-                  {canManageMembers ? (
-                    <MemberActions
-                      memberId={member.id}
-                      isActive={member.is_active}
-                      directory={directory}
+                      imageUrl={photoUrls.get(member.id) ?? null}
                     />
-                  ) : null}
-                </div>
-              </Card>
-            ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <p className="min-w-0 truncate font-medium leading-tight">
+                          {member.display_name}
+                        </p>
+                        <p className="shrink-0 text-muted-foreground">
+                          {formatBirthday(
+                            member.birth_month,
+                            member.birth_day,
+                            member.birth_year
+                          )}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 truncate text-muted-foreground">
+                        {contact || "No contact details"}
+                        {" · "}
+                        {member.is_active ? "Active" : "Inactive"}
+                      </p>
+                    </div>
+                    {canManageMembers ? (
+                      <MemberActions
+                        compact
+                        memberId={member.id}
+                        isActive={member.is_active}
+                        directory={directory}
+                      />
+                    ) : null}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
           <ListPagination
             page={directory.page}
