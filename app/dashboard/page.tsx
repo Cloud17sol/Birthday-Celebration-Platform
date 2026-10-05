@@ -197,6 +197,19 @@ export default async function DashboardPage({
     }
   }
 
+  let memberTotal: number | null = null;
+
+  if (!membershipError && currentMembership && organization) {
+    const { count, error: memberCountError } = await supabase
+      .from("members")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", currentMembership.organization_id);
+
+    if (!memberCountError && count != null) {
+      memberTotal = count;
+    }
+  }
+
   let pendingSummary: PendingRegistrationSummary = { status: "hidden" };
 
   if (
@@ -296,15 +309,30 @@ export default async function DashboardPage({
                     {organization.slug}
                   </p>
                 </div>
-                {currentMembership.role === "owner" ||
-                currentMembership.role === "admin" ? (
-                  <Link
-                    href="/dashboard/organization"
-                    className={cn(buttonVariants(), "h-11 shrink-0")}
-                  >
-                    Edit organization
-                  </Link>
-                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  {memberTotal != null ? (
+                    <Link
+                      href="/members"
+                      className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#f3f6fb] px-3"
+                    >
+                      <span className="text-lg font-semibold tabular-nums">
+                        {memberTotal}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {memberTotal === 1 ? "member" : "members"}
+                      </span>
+                    </Link>
+                  ) : null}
+                  {currentMembership.role === "owner" ||
+                  currentMembership.role === "admin" ? (
+                    <Link
+                      href="/dashboard/organization"
+                      className={cn(buttonVariants(), "h-11 shrink-0")}
+                    >
+                      Edit organization
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             </CardContent>
           </Card>
