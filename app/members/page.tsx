@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LayoutDashboard, Pencil, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { Download, LayoutDashboard, Pencil, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { cn } from "cn";
 import { ListPagination } from "@/components/list-pagination";
 import { MemberAvatar } from "@/components/member-avatar";
@@ -355,6 +355,15 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
           <p className="text-sm text-muted-foreground">Birthday directory</p>
         </div>
         <div className="flex shrink-0 gap-2">
+          <Link
+            href="/members/export"
+            aria-label="Export members to CSV"
+            title="Export CSV"
+            className={cn(buttonVariants({ variant: "outline" }), "h-11 gap-1.5 px-3")}
+          >
+            <Download />
+            Export
+          </Link>
           {canManageMembers ? (
             <Link
               href="/members/new"
